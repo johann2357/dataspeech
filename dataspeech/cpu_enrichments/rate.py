@@ -21,7 +21,7 @@ def rate_apply(batch, rank=None, audio_column_name="audio", text_column_name="te
     """
     # Instantiate the backend once
     def phonemize_texts(texts):
-        return [backend.phonemize(text) for text in texts]
+        return backend.phonemize(texts)
 
     if isinstance(batch[audio_column_name], list):
         phonemes_list = phonemize_texts(batch[text_column_name])
