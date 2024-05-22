@@ -1,6 +1,11 @@
-from phonemizer import phonemize
 from phonemizer.separator import Separator
 from phonemizer.backend import EspeakBackend
+
+backend = EspeakBackend(
+    language='es-419',
+    with_stress=True,
+    separator=Separator(phone='-', word=' ')
+)
 
 def rate_apply(batch, rank=None, audio_column_name="audio", text_column_name="text"):
     """
@@ -15,22 +20,15 @@ def rate_apply(batch, rank=None, audio_column_name="audio", text_column_name="te
     Returns:
     - dict: The updated batch including speaking rates and phonemized text.
     """
-    def phonemize_text(text):
-        return phonemize(
-            text,
-            language='es-419',
-            backend='espeak',
-            with_stress=True,
-            separator=Separator(phone='-', word=' '),
-            njobs=1
-        )
+    # Instantiate the backend once
+    def phonemize_texts(texts):
+        return [backend.phonemize(text) for text in texts]
 
     if isinstance(batch[audio_column_name], list):
+        phonemes_list = phonemize_texts(batch[text_column_name])
+        
         speaking_rates = []
-        phonemes_list = []
-        for text, audio in zip(batch[text_column_name], batch[audio_column_name]):
-            phonemes = phonemize_text(text)
-            
+        for phonemes, audio in zip(phonemes_list, batch[audio_column_name]):
             sample_rate = audio.get("sampling_rate")
             audio_array = audio.get("array")
             if sample_rate is None or audio_array is None:
@@ -40,12 +38,11 @@ def rate_apply(batch, rank=None, audio_column_name="audio", text_column_name="te
             speaking_rate = len(phonemes) / audio_length
 
             speaking_rates.append(speaking_rate)
-            phonemes_list.append(phonemes)
         
         batch["speaking_rate"] = speaking_rates
         batch["phonemes"] = phonemes_list
     else:
-        phonemes = phonemize_text(batch[text_column_name])
+        phonemes = backend.phonemize(batch[text_column_name])
         
         sample_rate = batch[audio_column_name].get("sampling_rate")
         audio_array = batch[audio_column_name].get("array")
