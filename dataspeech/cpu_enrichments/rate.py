@@ -41,7 +41,7 @@ def rate_apply(batch, rank=None, audio_column_name="audio", text_column_name="te
         batch["speaking_rate"] = speaking_rates
         batch["phonemes"] = phonemes_list
     else:
-        phonemes = backend.phonemize(batch[text_column_name])
+        phonemes = phonemize_texts([batch[text_column_name]])[0]
         
         sample_rate = batch[audio_column_name].get("sampling_rate")
         audio_array = batch[audio_column_name].get("array")
@@ -53,5 +53,4 @@ def rate_apply(batch, rank=None, audio_column_name="audio", text_column_name="te
         
         batch["speaking_rate"] = speaking_rate
         batch["phonemes"] = phonemes
-
     return batch
