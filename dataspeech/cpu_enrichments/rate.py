@@ -4,7 +4,6 @@ from phonemizer.backend import EspeakBackend
 backend = EspeakBackend(
     language='es-419',
     with_stress=True,
-    separator=Separator(phone='-', word=' ')
 )
 
 def rate_apply(batch, rank=None, audio_column_name="audio", text_column_name="text"):
