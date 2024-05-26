@@ -302,16 +302,17 @@ class DataCollatorWithPadding:
 
 
 # TODO(SG): add accent keyword
-PROMPT = """You will be given six descriptive keywords related to an audio sample of a person's speech. These keywords include:
+"""You will be given seven descriptive keywords related to an audio sample of a person's speech. These keywords include:
 1. The gender (e.g., male, female)
 2. The level of reverberation (e.g., very roomy sounding, quite roomy sounding, slightly roomy sounding, moderate reverberation, slightly confined sounding, quite confined sounding, very confined sounding)
-3. The amount of noise the sample (e.g., very noisy, quite noisy, slightly noisy, moderate ambient sound, slightly clear, quite clear, very clear)
+3. The amount of noise in the sample (e.g., very noisy, quite noisy, slightly noisy, moderate ambient sound, slightly clear, quite clear, very clear)
 4. The tone of the speaker's voice (e.g., very monotone, quite monotone, slightly monotone, moderate intonation, slightly expressive, quite expressive, very expressive)
 5. The pace of the speaker's delivery (e.g., very slowly, quite slowly, slightly slowly, moderate speed, slightly fast, quite fast, very fast)
 6. The pitch of the speaker's voice (e.g., very low pitch, quite low pitch, slightly low pitch, moderate pitch, slightly high pitch, quite high pitch, very high pitch)
+7. The country or region (e.g., Mexico, Spain, Argentina, PE for Peru, AR for Argentina, CL for Chile, ve for venezuela, co for colombia, pr for puerto rico, generic latin_america)
 Your task is to create a text description using these keywords that accurately describes the speech sample while ensuring the description remains grammatically correct and easy to understand. You should rearrange the keyword order as necessary, and substitute synonymous terms where appropriate. If the amount of noise is 'very noisy' and the level of reverberation is 'very roomy sounding', include terms like 'very bad recording' in the description. Likewise, if the amount of noise is 'very clear' and the level of reverberation is 'very confined sounding', include terms like 'very good recording' in the description. Otherwise, do not add extra details beyond what has been provided, and only return the generated description.
-For example, given the following keywords: 'female', 'slightly roomy sounding', 'slightly noisy', 'very expressive', 'slightly low pitch', 'very slowly', a valid description would be: 'a woman with a deep voice speaks slowly but has an animated delivery in an echoey room with some background noise'.
-For the keywords: '[gender]', '[reverberation]', '[noise]', '[speech_monotony]', '[pitch]', '[speaking_rate]', the corresponding description is:"
+For example, given the following keywords: 'female', 'slightly roomy sounding', 'slightly noisy', 'very expressive', 'slightly low pitch', 'very slowly', 'Mexico', a valid description would be: 'a woman from Mexico with a deep voice speaks slowly but has an animated delivery in an echoey room with some background noise'.
+For the keywords: '[gender]', '[reverberation]', '[noise]', '[speech_monotony]', '[pitch]', '[speaking_rate]', '[country]', the corresponding description is:"
 """
 
 NEW_PROMPT = """You will be given six descriptive keywords related to an audio sample of a person's speech. These keywords include:
@@ -410,7 +411,7 @@ def main():
             raw_datasets[split] = raw_datasets[split].select(range(data_args.max_eval_samples))
 
     # TODO(SG): add accent
-    EXPECTED_COLUMNS = {"gender", "pitch", "noise", "reverberation", "speech_monotony", "speaking_rate"}
+    EXPECTED_COLUMNS = {"gender", "pitch", "noise", "reverberation", "speech_monotony", "speaking_rate", "country"}
     if data_args.is_single_speaker:
         EXPECTED_COLUMNS = {"noise", "reverberation", "speech_monotony", "speaking_rate"}
     if not EXPECTED_COLUMNS.issubset(raw_datasets_features):
