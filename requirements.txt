@@ -1,3 +1,4 @@
+numpy==1.26.4
 datasets[audio]
 https://github.com/marianne-m/brouhaha-vad/archive/main.zip
 penn
@@ -6,3 +7,5 @@ demucs
 transformers
 accelerate
 bitsandbytes
+phonemizer
+python-espeak

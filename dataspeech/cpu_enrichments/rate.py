@@ -2,7 +2,7 @@ from phonemizer.separator import Separator
 from phonemizer.backend import EspeakBackend
 
 backend = EspeakBackend(
-    language='es-419',
+    language='qu',
     with_stress=True,
 )
 
