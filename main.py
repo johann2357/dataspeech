@@ -33,7 +33,7 @@ def map_with_dynamic_batch_size(dataset, function, initial_batch_size, min_batch
     raise RuntimeError("Maximum retries reached. Process failed due to OOM.")
 
 
-def is_short(example, max_length_in_seconds=10):
+def is_short(example, max_length_in_seconds=2):
     arr = example["audio"]["array"]
     sampling_rate = example["audio"]["sampling_rate"]
     length_in_seconds = arr.shape[0] / sampling_rate
