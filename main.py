@@ -4,6 +4,7 @@ from dataspeech import rate_apply, pitch_apply, snr_apply
 import torch
 import argparse
 
+
 def map_with_dynamic_batch_size(dataset, function, initial_batch_size, min_batch_size, num_proc, with_rank, remove_columns, fn_kwargs):
     current_batch_size = initial_batch_size
     retries = 0
@@ -31,10 +32,17 @@ def map_with_dynamic_batch_size(dataset, function, initial_batch_size, min_batch
                 raise e
     raise RuntimeError("Maximum retries reached. Process failed due to OOM.")
 
+
+def is_short(example, max_length_in_seconds=50):
+    arr = example["audio"]["array"]
+    sampling_rate = example["audio"]["sampling_rate"]
+    length_in_seconds = arr.shape[0] / sampling_rate
+    return length_in_seconds < max_length_in_seconds
+
+
 if __name__ == "__main__":
     set_start_method("spawn")
     parser = argparse.ArgumentParser()
-    
     parser.add_argument("dataset_name", type=str, help="Path or name of the dataset. See: https://huggingface.co/docs/datasets/v2.17.0/en/package_reference/loading_methods#datasets.load_dataset.path")
     parser.add_argument("--configuration", default=None, type=str, help="Dataset configuration to use, if necessary.")
     parser.add_argument("--output_dir", default=None, type=str, help="If specified, save the dataset on disk with this path.")
@@ -60,6 +68,7 @@ if __name__ == "__main__":
     text_column_name = "text" if args.rename_column else args.text_column_name
     if args.rename_column:
         dataset = dataset.rename_columns({args.audio_column_name: "audio", args.text_column_name: "text"})
+    dataset = dataset.filter(is_short)
 
     print("Compute pitch")
     pitch_dataset = map_with_dynamic_batch_size(
