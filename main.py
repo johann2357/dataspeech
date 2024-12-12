@@ -33,7 +33,7 @@ def map_with_dynamic_batch_size(dataset, function, initial_batch_size, min_batch
     raise RuntimeError("Maximum retries reached. Process failed due to OOM.")
 
 
-def is_short(example, max_length_in_seconds=2):
+def is_short(example, max_length_in_seconds=10):
     arr = example["audio"]["array"]
     sampling_rate = example["audio"]["sampling_rate"]
     length_in_seconds = arr.shape[0] / sampling_rate
@@ -68,6 +68,8 @@ if __name__ == "__main__":
     text_column_name = "text" if args.rename_column else args.text_column_name
     if args.rename_column:
         dataset = dataset.rename_columns({args.audio_column_name: "audio", args.text_column_name: "text"})
+
+    # Filter short audio
     dataset = dataset.filter(is_short)
 
     print("Compute pitch")
@@ -103,16 +105,22 @@ if __name__ == "__main__":
         remove_columns=[audio_column_name],  # tricks to avoid rewritting audio
         fn_kwargs={"audio_column_name": audio_column_name, "text_column_name": text_column_name},
     )
-    
+
+    print("Rate dataset", rate_dataset)
+
+    # remove no used columns for now
+    dataset.pop("validation")
+    dataset.pop("test")
+
     for split in dataset.keys():
         dataset[split] = pitch_dataset[split].add_column("snr", snr_dataset[split]["snr"]).add_column("c50", snr_dataset[split]["c50"])
         dataset[split] = dataset[split].add_column("speaking_rate", rate_dataset[split]["speaking_rate"]).add_column("phonemes", rate_dataset[split]["phonemes"])
-    
+
     if args.output_dir:
-        print("Saving to disk...")
+        print("Saving to disk...", dataset)
         dataset.save_to_disk(args.output_dir)
     if args.repo_id:
-        print("Pushing to the hub...")
+        print("Pushing to the hub...", dataset)
         if args.configuration:
             dataset.push_to_hub(args.repo_id, args.configuration)
         else:
