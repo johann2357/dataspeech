@@ -106,7 +106,7 @@ def speaker_level_relative_to_gender(dataset, text_bins, speaker_column_name, ge
         for split in df:
             panda_data = df[split].remove_columns([col for col in df[split].column_names if col not in {speaker_column_name, column_name, gender_column_name}]).to_pandas()
             list_data.append(panda_data)
-        
+
     dataframe = pd.concat(list_data, ignore_index=True)
     dataframe = dataframe.groupby(speaker_column_name).agg({column_name: "mean", gender_column_name: "first"})
     if bin_edges is None:

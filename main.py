@@ -1,8 +1,23 @@
+import json
 from datasets import load_dataset
 from multiprocess import set_start_method
 from dataspeech import rate_apply, pitch_apply, snr_apply
 import torch
 import argparse
+
+
+SPEAKERS = {
+    "male": [
+        "ANTONIO",
+        "MANUEL",
+        "IVAN",
+    ],
+    "female": [
+        "CELIA",
+        "LUZ",
+        "RUTH",
+    ],
+}
 
 
 def map_with_dynamic_batch_size(dataset, function, initial_batch_size, min_batch_size, num_proc, with_rank, remove_columns, fn_kwargs):
@@ -115,6 +130,12 @@ if __name__ == "__main__":
     for split in dataset.keys():
         dataset[split] = pitch_dataset[split].add_column("snr", snr_dataset[split]["snr"]).add_column("c50", snr_dataset[split]["c50"])
         dataset[split] = dataset[split].add_column("speaking_rate", rate_dataset[split]["speaking_rate"]).add_column("phonemes", rate_dataset[split]["phonemes"])
+        if "gender" not in dataset[split].column_names:
+            genders = [
+                "male" if speaker_id in SPEAKERS["male"] else "female"
+                for speaker_id in dataset[split]["speaker_id"]
+            ]
+            dataset[split] = dataset[split].add_column("gender", genders)
 
     if args.output_dir:
         print("Saving to disk...", dataset)
