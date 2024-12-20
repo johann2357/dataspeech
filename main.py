@@ -51,23 +51,11 @@ def map_with_dynamic_batch_size(dataset, function, initial_batch_size, min_batch
     raise RuntimeError("Maximum retries reached. Process failed due to OOM.")
 
 
-def is_valid(example):
-    arr = example["audio"]["array"]
-    sampling_rate = example["audio"]["sampling_rate"]
-    if not arr:
-        print(f"Invalid audio: {example}")
-        return False
-    length_in_seconds = arr.shape[0] / sampling_rate
-    result = 1 < length_in_seconds < 10
-    if not result:
-        print(f"Audio length problem: {example}")
-    return result
-
-
 if __name__ == "__main__":
     set_start_method("spawn")
     parser = argparse.ArgumentParser()
     parser.add_argument("dataset_name", type=str, help="Path or name of the dataset. See: https://huggingface.co/docs/datasets/v2.17.0/en/package_reference/loading_methods#datasets.load_dataset.path")
+    parser.add_argument("--data_files", default=None, type=str, help="File or list of files to process")
     parser.add_argument("--configuration", default=None, type=str, help="Dataset configuration to use, if necessary.")
     parser.add_argument("--output_dir", default=None, type=str, help="If specified, save the dataset on disk with this path.")
     parser.add_argument("--repo_id", default=None, type=str, help="If specified, push the dataset to the hub.")
@@ -83,7 +71,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.configuration:
+    if args.data_files:
+        dataset = load_dataset(
+            args.dataset_name,
+            data_files=args.data_files,
+            num_proc=args.cpu_num_workers,
+        )
+    elif args.configuration:
         dataset = load_dataset(args.dataset_name, args.configuration, num_proc=args.cpu_num_workers)
     else:
         dataset = load_dataset(args.dataset_name, num_proc=args.cpu_num_workers)
@@ -92,9 +86,6 @@ if __name__ == "__main__":
     text_column_name = "text" if args.rename_column else args.text_column_name
     if args.rename_column:
         dataset = dataset.rename_columns({args.audio_column_name: "audio", args.text_column_name: "text"})
-
-    # Filter short audio
-    dataset = dataset.filter(is_valid)
 
     print("Compute pitch")
     pitch_dataset = map_with_dynamic_batch_size(
@@ -131,10 +122,10 @@ if __name__ == "__main__":
     )
 
     print("Rate dataset", rate_dataset)
-
     for split in dataset.keys():
-        dataset[split] = pitch_dataset[split].add_column("snr", snr_dataset[split]["snr"]).add_column("c50", snr_dataset[split]["c50"])
-        dataset[split] = dataset[split].add_column("speaking_rate", rate_dataset[split]["speaking_rate"]).add_column("phonemes", rate_dataset[split]["phonemes"])
+        if dataset[split]:
+            dataset[split] = pitch_dataset[split].add_column("snr", snr_dataset[split]["snr"]).add_column("c50", snr_dataset[split]["c50"])
+            dataset[split] = dataset[split].add_column("speaking_rate", rate_dataset[split]["speaking_rate"]).add_column("phonemes", rate_dataset[split]["phonemes"])
 
     if args.output_dir:
         print("Saving to disk...", dataset)
