@@ -1,8 +1,26 @@
+import json
+
 from datasets import load_dataset
 from multiprocess import set_start_method
 from dataspeech import rate_apply, pitch_apply, snr_apply
 import torch
 import argparse
+
+
+def process_with_error_handling(func, batch, **kwargs):
+    error_log_file = "error_log.jsonl"
+    try:
+        return func(*args, **kwargs)
+    except Exception as e:
+        error_details = {
+            "function": func.__name__,
+            "batch": str(batch),
+            "error": str(e),
+        }
+        with open(error_log_file, "a") as f:
+            f.write(json.dumps(error_details) + "\n")
+
+        return None
 
 
 def map_with_dynamic_batch_size(dataset, function, initial_batch_size, min_batch_size, num_proc, with_rank, remove_columns, fn_kwargs):
@@ -33,11 +51,17 @@ def map_with_dynamic_batch_size(dataset, function, initial_batch_size, min_batch
     raise RuntimeError("Maximum retries reached. Process failed due to OOM.")
 
 
-def is_short(example, max_length_in_seconds=10):
+def is_valid(example):
     arr = example["audio"]["array"]
     sampling_rate = example["audio"]["sampling_rate"]
+    if not arr:
+        print(f"Invalid audio: {example}")
+        return False
     length_in_seconds = arr.shape[0] / sampling_rate
-    return length_in_seconds < max_length_in_seconds
+    result = 1 < length_in_seconds < 10
+    if not result:
+        print(f"Audio length problem: {example}")
+    return result
 
 
 if __name__ == "__main__":
@@ -70,7 +94,7 @@ if __name__ == "__main__":
         dataset = dataset.rename_columns({args.audio_column_name: "audio", args.text_column_name: "text"})
 
     # Filter short audio
-    # dataset = dataset.filter(is_short)
+    dataset = dataset.filter(is_valid)
 
     print("Compute pitch")
     pitch_dataset = map_with_dynamic_batch_size(
